@@ -868,18 +868,27 @@ describe('MessagesView first-contact trust UX', () => {
     // event (removeContact + setContacts + setComposeStatus + setComposeError).
     // Under CI load the resulting render-and-paint cycle has been observed
     // to take >1s, which is the default findByText timeout — that race has
-    // produced flakes on PRs #226, #237, #261, and #262 in succession.
-    // The settle window is bounded by React's reconciliation, not by any
-    // network/animation cost, so a generous timeout is the right deflake
-    // here (the failure mode this masks would be "toast never renders",
-    // which would still fail at 5s).
+    // produced flakes on PRs #226, #237, #261, #262, #265, #294, #303, and
+    // the fd7d6fa push.
+    //
+    // The structural root cause is fixed in .github/workflows/ci.yml via a
+    // concurrency group (ci.yml runs twice in parallel per PR — direct
+    // trigger + workflow_call from docker-publish.yml — and both jobs land
+    // on the same Actions runner pool, starving each other). Serialising
+    // them via concurrency removes the resource contention.
+    //
+    // We also bump the timeout here as belt-and-suspenders. The settle
+    // window is bounded by React's reconciliation, not by any network or
+    // animation cost, so a generous timeout is the right deflake (the
+    // failure mode this masks would be "toast never renders", which still
+    // fails at 15s).
     await waitFor(
       () => {
         expect(
           screen.getByText(/Removed contact: Remove Me\./i),
         ).toBeInTheDocument();
       },
-      { timeout: 5000, interval: 50 },
+      { timeout: 15000, interval: 50 },
     );
     expect(screen.queryByText('Remove Me')).not.toBeInTheDocument();
   });
