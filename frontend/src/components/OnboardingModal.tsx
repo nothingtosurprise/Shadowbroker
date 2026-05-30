@@ -129,13 +129,16 @@ const OnboardingModal = React.memo(function OnboardingModal({
 
   const agentSnippet = [
     `SHADOWBROKER_URL=${agentEndpoint}`,
-    agentSecret ? `SHADOWBROKER_KEY=${agentSecret}` : 'SHADOWBROKER_KEY=<generate in ShadowBroker>',
+    agentSecret ? `SHADOWBROKER_HMAC_SECRET=${agentSecret}` : 'SHADOWBROKER_HMAC_SECRET=<generate in ShadowBroker>',
     `SHADOWBROKER_ACCESS=${agentTier}`,
     '',
     '# FIRST: load available tools',
     `GET ${agentEndpoint}/api/ai/tools`,
     '',
-    '# Auth: HMAC-SHA256 signed requests.',
+    '# Auth: SHADOWBROKER_HMAC_SECRET is not a raw API key.',
+    '# Sign every direct request with X-SB-Timestamp, X-SB-Nonce, and X-SB-Signature.',
+    '# Signature input: METHOD|path|timestamp|nonce|sha256(body).',
+    '# Do not send the secret as X-Admin-Key, Authorization, or a query parameter.',
     '# Restricted = read-only telemetry. Full = can write when asked.',
   ].join('\n');
   const remoteAgentNeedsTor = agentMode === 'remote' && !torAddress;
